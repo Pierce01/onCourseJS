@@ -1,0 +1,15 @@
+{
+  "name": "wrap-oncourse",
+  "version": "0.0.1",
+  "description": "Wraps oncourse",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Pierce Harriz",
+  "license": "ISC",
+  "dependencies": {
+    "q": "^1.5.1",
+    "request": "^2.88.0"
+  }
+}
