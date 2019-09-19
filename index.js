@@ -21,11 +21,11 @@ class Client extends EventEmitter {
         }, 3000)
     }
 
-    request(method, endpoint = " ", opts) {
+    request(method, endpoint = "", opts, params = "") {
         return new Promise(async resolve => {
-            _request({method, url: this.options.url + endpoint, headers: {'Cookie': await Promise.resolve(this.options.cookie)}, ...opts}, (error, response, body) => {
+            _request({method, url: `${this.options.url}${endpoint}${params}`, headers: {'Cookie': await Promise.resolve(this.options.cookie)}, ...opts}, (error, response, body) => {
                 if(error || response.statusCode === 500) {
-                    this.emit('error', {error, code: response.statusCode});
+                    this.emit('error', {error, code: (response ? response.statusCode: null)});
                     resolve(false);
                 }
                 resolve(response, body);
@@ -38,9 +38,9 @@ class Client extends EventEmitter {
             const response = await this.request('POST');
             if(!response.body) resolve(null);
             this.options.ids = {
-                user: (new RegExp("\"id\":[0-9]+").exec(response.body))[0].split(':')[1],
-                schoolyear: (new RegExp("\"schoolYearId\":[0-9]+").exec(response.body))[0].split(':')[1],
-                school: (new RegExp("\"schoolId\":[0-9]+").exec(response.body))[0].split(':')[1]
+                studentID: (new RegExp("\"id\":[0-9]+").exec(response.body))[0].split(':')[1],
+                schoolYearID: (new RegExp("\"schoolYearId\":[0-9]+").exec(response.body))[0].split(':')[1],
+                schoolID: (new RegExp("\"schoolId\":[0-9]+").exec(response.body))[0].split(':')[1]
             }
             resolve(this.options.ids);
         })
@@ -62,28 +62,52 @@ class Client extends EventEmitter {
 
     async getAttendence() {
         const ids = await this.getIds();
-        const response = await this.request('GET', `/api/classroom/attendance/attendance_summary?schoolID=${ids.school}&schoolYearID=${ids.schoolyear}&studentID=${ids.user}`);
+        const response = await this.request('GET', '/api/classroom/attendance/attendance_summary', {}, parseParams(ids));
         if(!response) return null;
         return JSON.parse(response.body)
+    }
+
+    async getCalanders() {
+        const ids = await this.getIds();
+        const response = await this.request('GET', '/api/classroom/calendar/get_student_calendars', {}, parseParams(ids));
+        if(!response) return null;
+        return JSON.parse(response.body)
+    }
+
+    async getCalander(user, date) {
+        const response = await this.request('GET', '/api/classroom/calendar/calendar', {}, parseParams({
+            ids: user,
+            start: 1568865600,
+            end: 1568952000,
+            _: date || new Date().getTime()
+        }));
+        if(!response) return null;
+        return JSON.parse(response.body);
+    }
+
+    async getGrades() {
+        const response = await this.request('GET', '/api/classroom/grades/report_cards', {}, parseParams(await this.getIds()));
+        if(!response) return null;
+        return JSON.parse(response.body);
     }
 }
 
 function parseCookie(cookies) {
     const required = ['_occauth', 'visid_incap', 'incap_ses'];
-    let cookieJson = {};
+    let string = "";
     for (let i in cookies) {
         const name = (cookies[i].split(';')[0]).split('=');
         for (let e in required) {
-            if (name[0].includes(required[e])) cookieJson[name[0]] = name[1];
+            if (name[0].includes(required[e])) string += `${name[0]}=${name[1]};`;
         }
     }
+    return string;
+}
 
-    let string = "";
-    const keys = Object.keys(cookieJson);
-    for (let cookie of keys) {
-        string += `${cookie}=${cookieJson[cookie]}; `
-    }
-    return string
+function parseParams(params) {
+    return '?' + Object.keys(params).map(function(key) {
+        return key + '=' + params[key]
+    }).join('&');
 }
 
 module.exports = { Client };
