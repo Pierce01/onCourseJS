@@ -35,6 +35,7 @@ class Client extends EventEmitter {
 
     getIds() {
         return new Promise(async resolve => {
+            if(this.options.ids) return this.options.ids;
             const response = await this.request('POST');
             if(!response.body) resolve(null);
             this.options.ids = {
@@ -90,6 +91,28 @@ class Client extends EventEmitter {
         if(!response) return null;
         return JSON.parse(response.body);
     }
+
+    async getRecentGrades() {
+        const startDate = new Date();
+        startDate.setMonth(startDate.getMonth() - 12);
+        const response = await this.request('GET', '/api/classroom/dashboard/recent_grades', {}, parseParams({
+            endDate: formatDate(new Date()),
+            startDate: formatDate(startDate),
+            studentId: (await this.getIds()).studentID
+        }));
+        if(!response) return null;
+        return JSON.parse(response.body)
+    }
+
+    async getBellHeaders() {
+        const ids = await this.getIds();
+        const response = await this.request('GET', '/api/classroom/schedule/get_bell_schedule_headers', {}, parseParams({
+            schoolYearID: ids.schoolYearID,
+            studentID: ids.studentID
+        }));
+        if(!response) return null;
+        return JSON.parse(response.body);
+    }
 }
 
 function parseCookie(cookies) {
@@ -108,6 +131,15 @@ function parseParams(params) {
     return '?' + Object.keys(params).map(function(key) {
         return key + '=' + params[key]
     }).join('&');
+}
+
+// Stackoverflow
+function formatDate(date) {
+    const d = new Date(date),
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = d.getFullYear();
+    return [month, day, year].join('/');
 }
 
 module.exports = { Client };
