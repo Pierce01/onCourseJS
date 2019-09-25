@@ -16,7 +16,12 @@ class Client extends EventEmitter {
     watchForUpdates() {
         setInterval(async () => {
             const response = await this.request('POST', '/api/classroom/notifications/check_updates');
-            if(!response) throw Error('Unable to get update!');
+            if(!response) {
+                if(!this.options.autoReconnect) {
+                    throw Error("Couldn't get updates")
+                }
+                this.options.cookie = this.getCookie();
+            };
             this.emit('update', JSON.parse(response.body));
         }, 3000)
     }
@@ -33,26 +38,25 @@ class Client extends EventEmitter {
         });
     }
 
-    getIds() {
-        return new Promise(async resolve => {
-            if(this.options.ids) return this.options.ids;
-            const response = await this.request('POST');
-            if(!response.body) resolve(null);
-            this.options.ids = {
-                studentID: (new RegExp("\"id\":[0-9]+").exec(response.body))[0].split(':')[1],
-                schoolYearID: (new RegExp("\"schoolYearId\":[0-9]+").exec(response.body))[0].split(':')[1],
-                schoolID: (new RegExp("\"schoolId\":[0-9]+").exec(response.body))[0].split(':')[1]
-            }
-            resolve(this.options.ids);
-        })
+    async getIds() {
+        if(this.options.ids) return this.options.ids;
+        const response = await this.request('POST');
+        if(!response.body) return null;
+        this.options.ids = {
+            studentID: (new RegExp("\"id\":[0-9]+").exec(response.body))[0].split(':')[1],
+            schoolYearID: (new RegExp("\"schoolYearId\":[0-9]+").exec(response.body))[0].split(':')[1],
+            schoolID: (new RegExp("\"schoolId\":[0-9]+").exec(response.body))[0].split(':')[1]
+        }
+        return this.options.ids
     }
 
     async getCookie() {
         const response = await this.request('POST', '/account/login', {
             formData: { username: this.options.username, password: this.options.password }
         });
-        if(!response || response.statusCode ===! 302) throw Error('Login failed.')
-        return parseCookie(response.headers['set-cookie']);;
+        if(!response || response.statusCode ===! 302) throw Error('Login failed.');
+        this.options.cookie = parseCookie(response.headers['set-cookie']);
+        return this.options.cookie;
     }
 
     async getMessages() {
@@ -75,9 +79,9 @@ class Client extends EventEmitter {
         return JSON.parse(response.body)
     }
 
-    async getCalander(user, date) {
+    async getCalander(date) {
         const response = await this.request('GET', '/api/classroom/calendar/calendar', {}, parseParams({
-            ids: user,
+            ids: (await this.getIds()).studentID,
             start: 1568865600,
             end: 1568952000,
             _: date || new Date().getTime()
@@ -105,10 +109,33 @@ class Client extends EventEmitter {
     }
 
     async getBellHeaders() {
+        if(this.options.bellHeaders) return this.options.bellHeaders;
+
         const ids = await this.getIds();
         const response = await this.request('GET', '/api/classroom/schedule/get_bell_schedule_headers', {}, parseParams({
             schoolYearID: ids.schoolYearID,
             studentID: ids.studentID
+        }));
+        if(!response) return null;
+        this.options.bellHeaders = JSON.parse(response.body);
+        return this.options.bellHeaders;
+    }
+
+    async getScheduleMatrix(type) {
+        const ids = await this.getIds();
+        const headerType = await this.getBellHeaders();
+        const response = await this.request('GET', '/api/classroom/schedule/get_schedule_matrix', {}, parseParams({
+            bellHeaderID: headerType.ReturnValue[type].id, schoolID: ids.schoolID, schoolYearID: ids.schoolYearID, studentID: ids.studentID
+        }));
+        if(!response) return null;
+        return JSON.parse(response.body);
+    }
+
+    async getSchedule(type) {
+        const ids = await this.getIds();
+        const headerType = await this.getBellHeaders();
+        const response = await this.request('GET', '/api/classroom/schedule/get_student_schedule_on_date', {}, parseParams({
+            bellHeaderId: headerType.ReturnValue[type].id, selectedDate: new Date().toISOString(), studentID: ids.studentID
         }));
         if(!response) return null;
         return JSON.parse(response.body);
