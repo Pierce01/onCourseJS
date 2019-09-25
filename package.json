@@ -1,6 +1,6 @@
 {
-  "name": "wrap-oncourse",
-  "version": "0.0.1",
+  "name": "oncoursejs",
+  "version": "0.1.0",
   "description": "Wraps oncourse",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,6 @@
   "author": "Pierce Harriz",
   "license": "ISC",
   "dependencies": {
-    "q": "^1.5.1",
     "request": "^2.88.0"
   }
 }
