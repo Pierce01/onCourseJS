@@ -21,6 +21,7 @@ Client.on('update', async (e) => { console.log(e) });
 ## Documentation 
 ### Client
 Client is a constructor that requires the following information to start properly.
+
 | Parameter             | Type    | Description                                                                                           |
 |-----------------------|---------|-------------------------------------------------------------------------------------------------------|
 | `options.username`      | String  | Username for the OnCourse Connect account.                                                            |
@@ -77,13 +78,12 @@ console.log(await Client.getCalanders());
 
 ### async getCalander()
 Returns a JSON Object with a specific calendar
-| Parameter | Type   | Description                                         |
-|-----------|--------|-----------------------------------------------------|
-| date      | String | Date for the specific calendar. Date is an integer. if none is provided, will default on today|
-
 ```js
 console.log(await Client.getCalander(new  Date().getTime()));
 ```
+| Parameter | Type   | Description                                         |
+|-----------|--------|-----------------------------------------------------|
+| date      | String | Date for the specific calendar. Date is an integer. if none is provided, will default on today|
 
 ### async getGrades()
 Returns your grades in a JSON Object.
@@ -105,23 +105,21 @@ console.log(await Client.getBellHeaders());
 
 ### async getScheduleMatrix()
 Returns JSON Object with a schedule matrix depending on the type.
+```js
+console.log(await Client.getScheduleMatrix(0));
+```
 | Paramater | Type     | Description                                                                       |
 |-----------|----------|-----------------------------------------------------------------------------------|
 | type      | interger | which matrix you want. (Half day schedule or full day). Review `getBellHeaders`. |
 
-```js
-console.log(await Client.getScheduleMatrix(0));
-```
-
 ### async getSchedule()
 Returns JSON Object with a schedule for the day depending on the type.
-| Paramater | Type     | Description                                                                       |
-|-----------|----------|-----------------------------------------------------------------------------------|
-| type      | interger | which schedule you want. (Half day or full day). Review `getBellHeaders`. |
-
 ```js
 console.log(await Client.getSchedule(0));
 ```
+| Parameter | Type     | Description                                                                       |
+|-----------|----------|-----------------------------------------------------------------------------------|
+| type      | interger | which schedule you want. (Half day or full day). Review `getBellHeaders`. |
 
 ## Any questions?
 DM me on Twitter (@YasuoPierce) or create an issue on the repo.
